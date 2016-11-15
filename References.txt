@@ -1,0 +1,6 @@
+Sources
+
+http://www.redblobgames.com/pathfinding/a-star/implementation.html#sec-1-4
+http://en.wikipedia.org/wiki/A*_search_algorithm
+
+and general ROS wiki
