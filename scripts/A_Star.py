@@ -53,13 +53,13 @@ def GetNeighbors (a, gridCellsMap):
 	return neighbors
 
 
-def GetPath (gridCellsMap, start_pos, goal_pos):
+def GetPath (gridMap, start_pos, goal_pos):
 	#Publisher ('path')
 	path_Publisher = rospy.Publisher('path', GridCells, queue_size=1) 
 
-	translatedStart, translatedGoal = translatePoints(gridMap, start, goal)
+	trans_start, trans_goal = translatePoints(gridMap, start_pos, goal_pos)
 	#Set up Queue and nodes for the path based off of the start and goal pos
-	parents, costs, currNode = goalSearch(gridCellsMap, start_pos, goal_pos)
+	parents, costs, currNode = goalSearch(gridMap, start_pos, goal_pos)
 	path = Path()
 	poseStampedList = []
 	i = 0
@@ -67,13 +67,13 @@ def GetPath (gridCellsMap, start_pos, goal_pos):
 
 	print "getting path"
 	#inititate the path collection while the 
-	while not (currNode.x == translatedStart.x and currNode.y == translatedStart.y): 
+	while not (currNode.x == trans_start.x and currNode.y == trans_start.y): 
 		print currNode
 		pathList.append(currNode)
 		currNode = parents[currNode]
 		i += 1
 
-	pathList.append(translatedStart)
+	pathList.append(trans_start)
 	path = GCfromList(gridMap,pathList)
 	print "found path"
 	path_Publisher.publish(path)
@@ -151,18 +151,18 @@ def Waypoints(List):
 	return WaypointCells
 
 
-def translatePoints(gridMap, start, goal):
+def translatePoints(gridMap, start_pos, goal_pos):
 
-	translatedStart = start
-	translatedGoal = goal
+	trans_start = start_pos
+	trans_goal = goal_pos
 
-	translatedStart.x = int(round((translatedStart.x - gridMap.info.origin.position.x) * 10))
-	translatedStart.y = int(round((translatedStart.y - gridMap.info.origin.position.y) * 10))
+	trans_start.x = int(round((trans_start.x - gridMap.info.origin.position.x) * 10))
+	trans_start.y = int(round((trans_start.y - gridMap.info.origin.position.y) * 10))
 
-	translatedGoal.x = int(round((translatedGoal.x - gridMap.info.origin.position.x) * 10))
-	translatedGoal.y = int(round((translatedGoal.y - gridMap.info.origin.position.y) * 10))
+	trans_goal.x = int(round((trans_goal.x - gridMap.info.origin.position.x) * 10))
+	trans_goal.y = int(round((trans_goal.y - gridMap.info.origin.position.y) * 10))
 
-	return translatedStart, translatedGoal
+	return trans_start, trans_goal
 	
 
 def goalSearch (gridCellsMap, start_pos, goal_pos):
