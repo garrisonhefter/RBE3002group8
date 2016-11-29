@@ -7,94 +7,84 @@ from nav_msgs.msg import OccupancyGrid
 import math
 import time
 
-def ExpandMap(occupancyGrid):
+def ExpandMap(occGrid):
 
-	lowerResGrid = OccupancyGrid(occupancyGrid.header, occupancyGrid.info, [])
+	low_res_grid = occGrid(occGrid.header, occGrid.info, [])
+	low_res_grid.info.resolution = .15
+	low_res_grid.info.width = int(math.floor(float(occGrid.info.width)/2))
+	low_res_grid.info.height = int(math.floor(float(occGrid.info.height)/2))
 
-	lowerResGrid.info.resolution = .4
-	lowerResGrid.info.width = int(math.floor(float(occupancyGrid.info.width)/2))
-	lowerResGrid.info.height = int(math.floor(float(occupancyGrid.info.height)/2))
-
-	width = lowerResGrid.info.width
-	height = lowerResGrid.info.height
+	width = low_res_grid.info.width
+	height = low_res_grid.info.height
 
 	#if width is odd
-	#othervariable is width+1
-	#else othervariable is width
 	if width % 2 == 1:
+	#othervariable is width+1
 		new_width = width + 1
+	#else othervariable is width
 	else:
 		new_width = width
 
-	lowerResGrid.data = [-1]*width*height
+	low_res_grid.data = [-1]*width*height
 
 	for i in range (0, height):
 		for j in range (0, width):
 			print i, j
-			if occupancyGrid.data[(j*2) + (width*2 * i*2)] >= 1 or \
-				occupancyGrid.data[(j*2) + (width*2 * ((i*2)+1))] >= 1 or \
-				occupancyGrid.data[(j*2)+1 + (width*2 * i*2)] >= 1 or \
-				occupancyGrid.data[(j*2)+1 + (width*2 * ((i*2)+1))] >= 1:
-				lowerResGrid.data[j + (new_width * i)] = 100 #put other variable here
-			elif occupancyGrid.data[(j*2) + (width*2 * i*2)] == 0 and \
-				occupancyGrid.data[(j*2) + (width*2 * ((i*2)+1))] == 0 and \
-				occupancyGrid.data[(j*2)+1 + (width*2 * i*2)] == 0 and \
-				occupancyGrid.data[(j*2)+1 + (width*2 * ((i*2)+1))] == 0:
-				lowerResGrid.data[j + (new_width * i)] = 0 #put other variable here
+			if occGrid.data[(j*2) + (width*2 * i*2)] >= 1 or \
+				occGrid.data[(j*2) + (width*2 * ((i*2)+1))] >= 1 or \
+				occGrid.data[(j*2)+1 + (width*2 * i*2)] >= 1 or \
+				occGrid.data[(j*2)+1 + (width*2 * ((i*2)+1))] >= 1:
+				low_res_grid.data[j + (new_width * i)] = 100 
+
+			elif occGrid.data[(j*2) + (width*2 * i*2)] == 0 and \
+				occGrid.data[(j*2) + (width*2 * ((i*2)+1))] == 0 and \
+				occGrid.data[(j*2)+1 + (width*2 * i*2)] == 0 and \
+				occGrid.data[(j*2)+1 + (width*2 * ((i*2)+1))] == 0:
+				low_res_grid.data[j + (new_width * i)] = 0 
 			else:
-				lowerResGrid.data[j + (new_width * i)] = -1 #put other variable here
+				low_res_grid.data[j + (new_width * i)] = -1 
+
 			#time.sleep(2)
 
-	expandedGrid = OccupancyGrid(lowerResGrid.header, lowerResGrid.info, lowerResGrid.data)
-
-	expandedData = list(lowerResGrid.data)
+	expan_grid = occGrid(low_res_grid.header, low_res_grid.info, low_res_grid.data)
+	expan_data = list(low_res_grid.data)
 
 	print "expanding"
 	for i in range (0, height):
 		for j in range (0, width):
-			if (lowerResGrid.data[j + (width * i)] >= 1):
+			if (low_res_grid.data[j + (width * i)] >= 1):
 				for k in range (j - 2, j + 3):
 					for l in range (i - 2, i + 3):
 						if (k > 0 and k < width and l > 0 and l < height):
-							expandedData[k + (width * l)] = 100
+							expan_data[k + (width * l)] = 100
 
-	expandedGrid.data = tuple(expandedData)
+	expan_grid.data = tuple(expan_data)
 	print "expanded"
-	return expandedGrid, lowerResGrid
-
+	return expan_grid, low_res_grid
 
 def MapCallback(occupancy):
 	print "ready"
-	global mapReady, occupancyGrid
-	
+	global mapReady, occGrid
 	mapReady = 1
-	occupancyGrid = occupancy
+	occGrid = occupancy
 
 if __name__ == '__main__':
 
-	global mapReady, occupancyGrid
-
-	rospy.init_node('doop')
-
+	global mapReady, occGrid
+	rospy.init_node('Obstacle_Expan_Node')
 	mapReady = 0
-	occupancyGrid = None
-
-	rospy.Subscriber('map', OccupancyGrid, MapCallback)
-	occPub = rospy.Publisher('expandedMap', OccupancyGrid, queue_size=1)
-	resPub = rospy.Publisher('resMap', OccupancyGrid, queue_size=1)
-
+	occGrid = None
+	rospy.Subscriber('map', occGrid, MapCallback)
+	occ_pub = rospy.Publisher('expandedMap', occGrid, queue_size=1)
+	res_pub = rospy.Publisher('resMap', occGrid, queue_size=1)
 	odom_list = tf.TransformListener()
-
 	rospy.sleep(rospy.Duration(1, 0))
 
-	print "gonna wait"
 	while not mapReady:
 		time.sleep(.3)
 		print mapReady
-
-	print "doing the thing"
-	expandedGrid, lowerResGrid = ExpandMap(occupancyGrid)
+	expan_grid, low_res_grid = ExpandMap(occGrid)
 	print "expanded"
-	occPub.publish(expandedGrid)
-	resPub.publish(lowerResGrid)
+	occ_pub.publish(expan_grid)
+	res_pub.publish(low_res_grid)
 	time.sleep(2)
