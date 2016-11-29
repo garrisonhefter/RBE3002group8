@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import rospy, tf
-
 from nav_msgs.msg import OccupancyGrid
 
 import math
@@ -9,11 +8,10 @@ import time
 
 def ExpandMap(occGrid):
 
-	low_res_grid = occGrid(occGrid.header, occGrid.info, [])
+	low_res_grid = OccupancyGrid(occGrid.header, occGrid.info, [])
 	low_res_grid.info.resolution = .15
 	low_res_grid.info.width = int(math.floor(float(occGrid.info.width)/2))
 	low_res_grid.info.height = int(math.floor(float(occGrid.info.height)/2))
-
 	width = low_res_grid.info.width
 	height = low_res_grid.info.height
 
@@ -35,7 +33,6 @@ def ExpandMap(occGrid):
 				occGrid.data[(j*2)+1 + (width*2 * i*2)] >= 1 or \
 				occGrid.data[(j*2)+1 + (width*2 * ((i*2)+1))] >= 1:
 				low_res_grid.data[j + (new_width * i)] = 100 
-
 			elif occGrid.data[(j*2) + (width*2 * i*2)] == 0 and \
 				occGrid.data[(j*2) + (width*2 * ((i*2)+1))] == 0 and \
 				occGrid.data[(j*2)+1 + (width*2 * i*2)] == 0 and \
@@ -43,10 +40,9 @@ def ExpandMap(occGrid):
 				low_res_grid.data[j + (new_width * i)] = 0 
 			else:
 				low_res_grid.data[j + (new_width * i)] = -1 
-
 			#time.sleep(2)
 
-	expan_grid = occGrid(low_res_grid.header, low_res_grid.info, low_res_grid.data)
+	expan_grid = OccupancyGrid(low_res_grid.header, low_res_grid.info, low_res_grid.data)
 	expan_data = list(low_res_grid.data)
 
 	print "expanding"
@@ -62,6 +58,7 @@ def ExpandMap(occGrid):
 	print "expanded"
 	return expan_grid, low_res_grid
 
+
 def MapCallback(occupancy):
 	print "ready"
 	global mapReady, occGrid
@@ -71,15 +68,17 @@ def MapCallback(occupancy):
 if __name__ == '__main__':
 
 	global mapReady, occGrid
-	rospy.init_node('Obstacle_Expan_Node')
+
+	rospy.init_node('Obstacle_Expansion_Node')
 	mapReady = 0
 	occGrid = None
-	rospy.Subscriber('map', occGrid, MapCallback)
-	occ_pub = rospy.Publisher('expandedMap', occGrid, queue_size=1)
-	res_pub = rospy.Publisher('resMap', occGrid, queue_size=1)
+	rospy.Subscriber('map', OccupancyGrid, MapCallback)
+	occ_pub = rospy.Publisher('expandedMap', OccupancyGrid, queue_size=1)
+	res_pub = rospy.Publisher('resMap', OccupancyGrid, queue_size=1)
 	odom_list = tf.TransformListener()
 	rospy.sleep(rospy.Duration(1, 0))
 
+	print "Waiting"
 	while not mapReady:
 		time.sleep(.3)
 		print mapReady
